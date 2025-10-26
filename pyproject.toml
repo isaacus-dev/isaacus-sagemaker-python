@@ -19,9 +19,9 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://docs.isaacus.com"
-Documentation = "https://github.com/isaacus-dev/isaacus-sagemaker/blob/main/README.md"
-Issues = "https://github.com/isaacus-dev/isaacus-sagemaker/issues"
-Source = "https://github.com/isaacus-dev/isaacus-sagemaker"
+Documentation = "https://github.com/isaacus-dev/isaacus-sagemaker-python/blob/main/README.md"
+Issues = "https://github.com/isaacus-dev/isaacus-sagemaker-python/issues"
+Source = "https://github.com/isaacus-dev/isaacus-sagemaker-python"
 
 [tool.ruff]
 exclude = [
