@@ -1,6 +1,6 @@
 [project]
 name = "isaacus-sagemaker"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
     {name="Isaacus", email="support@isaacus.com"},
 ]
