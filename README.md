@@ -1,7 +1,7 @@
-# Isaacus-SageMaker Python integration
+# Isaacus SageMaker Python integration
 <a href="https://pypi.org/project/isaacus-sagemaker/" alt="PyPI Version"><img src="https://img.shields.io/pypi/v/isaacus-sagemaker"></a> <a href="https://github.com/isaacus-dev/isaacus-sagemaker-python/actions/workflows/ci.yml" alt="Build Status"><img src="https://img.shields.io/github/actions/workflow/status/isaacus-dev/isaacus-sagemaker-python/ci.yaml?branch=main"></a>
 
-The Isaacus-SageMaker Python integration enables users to interact with private SageMaker deployments of Isaacus legal AI models via the [Isaacus Python SDK](https://github.com/isaacus-dev/isaacus-python).
+The Isaacus SageMaker Python integration enables users to interact with private SageMaker deployments of Isaacus legal AI models via the [Isaacus Python SDK](https://github.com/isaacus-dev/isaacus-python).
 
 This integration only requires a single line of code to be added to existing Isaacus API-based applications.
 
@@ -17,7 +17,7 @@ pip install isaacus
 ```
 
 ## Usage 👩‍💻
-To use the Isaacus-SageMaker integration, import either `IsaacusSageMakerRuntimeHTTPClient` (for synchronous usage) or `AsyncIsaacusSageMakerRuntimeHTTPClient` (for asynchronous usage) from `isaacus_sagemaker` along with `IsaacusSageMakerRuntimeEndpoint` to define available SageMaker endpoints.
+To use the Isaacus SageMaker integration, import either `IsaacusSageMakerRuntimeHTTPClient` (for synchronous usage) or `AsyncIsaacusSageMakerRuntimeHTTPClient` (for asynchronous usage) from `isaacus_sagemaker` along with `IsaacusSageMakerRuntimeEndpoint` to define available SageMaker endpoints.
 
 Then, create an instance of the `Isaacus` or `AsyncIsaacus` client as you normally would, but also pass your SageMaker HTTP client as the `http_client` parameter.
 
