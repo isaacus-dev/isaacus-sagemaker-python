@@ -1,0 +1,88 @@
+name: Publish to PyPI on version change
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo (full history for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.11 (for tomllib)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Determine if version changed in pyproject.toml
+        id: ver
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import io, os, subprocess, sys
+          try:
+              import tomllib  # py311+
+          except Exception:
+              print("tomllib missing", file=sys.stderr)
+              sys.exit(1)
+
+          def load_version_from_bytes(b: bytes):
+              return tomllib.load(io.BytesIO(b))["project"]["version"]
+
+          # current version
+          with open("pyproject.toml", "rb") as f:
+              current = load_version_from_bytes(f.read())
+
+          # previous version from the commit before this push (GitHub provides it)
+          before = os.environ.get("BEFORE_SHA") or ""
+          prev = None
+          if before and before != "0000000000000000000000000000000000000000":
+              try:
+                  blob = subprocess.check_output(["git", "show", f"{before}:pyproject.toml"])
+                  prev = load_version_from_bytes(blob)
+              except subprocess.CalledProcessError:
+                  prev = None  # file may not have existed
+
+          changed = (prev is None) or (current != prev)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"current={current}\n")
+              fh.write(f"previous={prev or ''}\n")
+              fh.write(f"changed={'true' if changed else 'false'}\n")
+
+          print(f"Current version: {current}")
+          print(f"Previous version: {prev}")
+          print(f"Changed: {changed}")
+          PY
+
+      - name: Show decision
+        run: |
+          echo "current=${{ steps.ver.outputs.current }}"
+          echo "previous=${{ steps.ver.outputs.previous }}"
+          echo "changed=${{ steps.ver.outputs.changed }}"
+
+      - name: Build sdist + wheel
+        if: steps.ver.outputs.changed == 'true'
+        run: |
+          python -m pip install -U pip
+          pip install build
+          python -m build
+
+      - name: Publish to PyPI (Trusted Publishing)
+        if: steps.ver.outputs.changed == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

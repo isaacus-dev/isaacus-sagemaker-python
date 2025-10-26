@@ -1,0 +1,126 @@
+[project]
+name = "isaacus-sagemaker"
+version = "0.1.0"
+authors = [
+    {name="Isaacus", email="support@isaacus.com"},
+]
+description = "A Python library for interacting with SageMaker deployments of the Isaacus API."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = [
+    "boto3>=1.40.49",
+    "httpx>=0.28.1",
+    "msgspec>=0.19.0",
+    "orjson>=3.11.4",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://docs.isaacus.com"
+Documentation = "https://github.com/isaacus-dev/isaacus-sagemaker/blob/main/README.md"
+Issues = "https://github.com/isaacus-dev/isaacus-sagemaker/issues"
+Source = "https://github.com/isaacus-dev/isaacus-sagemaker"
+
+[tool.ruff]
+exclude = [
+    "__pycache__",
+    "develop-eggs",
+    "eggs",
+    ".eggs",
+    "wheels",
+    "htmlcov",
+    ".tox",
+    ".nox",
+    ".coverage",
+    ".cache",
+    ".pytest_cache",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".pybuilder",
+    "__pypackages__",
+    ".env",
+    ".venv",
+    "venv",
+    "env",
+    "ENV",
+    "env.bak",
+    "venv.bak",
+    ".archive",
+    ".persist_cache",
+    "site-packages",
+    "node_modules",
+    "dist",
+    "build",
+    "dist-info",
+    "egg-info",
+    ".hatchling",
+    ".bzr",
+    ".direnv",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".vscode",
+    "_build",
+    "buck-out",
+    "migrations",
+    "target",
+    "bin",
+    "lib",
+    "lib64",
+    "include",
+    "share",
+    "var",
+    "tmp",
+    "temp",
+    "logs",
+]
+line-length = 120
+indent-width = 4
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+fixable = [
+    "ALL",
+]
+unfixable = []
+ignore = ["E741"]
+
+[tool.ruff.lint.isort]
+length-sort = true
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+lines-between-types = 1
+order-by-type = false
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.31.0",
+    "isaacus>=0.9.1",
+    "numpy>=2.0.2",
+    "pytest>=8.4.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
