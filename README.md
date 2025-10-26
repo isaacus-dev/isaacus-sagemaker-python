@@ -42,7 +42,7 @@ client = Isaacus(
         # region="us-west-2", # Optional, defaults to AWS SDK default region
         # profile="my-aws-profile", # Optional, defaults to AWS SDK default profile
         # boto_session_kwargs={"aws_access_key_id": "...",}, # Optional, additional boto3 session kwargs
-        #**{}, # Optional, additional httpx.Client kwargs
+        # **{}, # Optional, additional httpx.Client kwargs
     )
 )
 
@@ -53,7 +53,7 @@ aclient = AsyncIsaacus(
         # region="us-west-2", # Optional, defaults to AWS SDK default region
         # profile="my-aws-profile", # Optional, defaults to AWS SDK default profile
         # boto_session_kwargs={"aws_access_key_id": "...",}, # Optional, additional boto3 session kwargs
-        #**{}, # Optional, additional httpx.AsyncClient kwargs
+        # **{}, # Optional, additional httpx.AsyncClient kwargs
     )
 )
 ```
