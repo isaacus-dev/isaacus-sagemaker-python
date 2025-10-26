@@ -2,10 +2,10 @@ name: Publish to PyPI on version change
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main , dev]
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repo (full history for diff)
+      - name: Check out repo (full history for diff & tags)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -32,48 +32,40 @@ jobs:
         run: |
           set -euo pipefail
           python - << 'PY'
-          import io, os, subprocess, sys
+          import io, os, subprocess, sys, re, textwrap, datetime
           try:
               import tomllib  # py311+
-          except Exception:
-              print("tomllib missing", file=sys.stderr)
-              sys.exit(1)
+          except Exception as e:
+              print("tomllib missing", file=sys.stderr); raise
 
           def load_version_from_bytes(b: bytes):
               return tomllib.load(io.BytesIO(b))["project"]["version"]
 
-          # current version
-          with open("pyproject.toml", "rb") as f:
+          # Current version (from workspace)
+          with open("pyproject.toml","rb") as f:
               current = load_version_from_bytes(f.read())
 
-          # previous version from the commit before this push (GitHub provides it)
+          # Previous version (from commit before this push)
           before = os.environ.get("BEFORE_SHA") or ""
           prev = None
           if before and before != "0000000000000000000000000000000000000000":
               try:
-                  blob = subprocess.check_output(["git", "show", f"{before}:pyproject.toml"])
+                  blob = subprocess.check_output(["git","show",f"{before}:pyproject.toml"])
                   prev = load_version_from_bytes(blob)
               except subprocess.CalledProcessError:
-                  prev = None  # file may not have existed
+                  prev = None
 
           changed = (prev is None) or (current != prev)
 
-          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-              fh.write(f"current={current}\n")
-              fh.write(f"previous={prev or ''}\n")
-              fh.write(f"changed={'true' if changed else 'false'}\n")
-
-          print(f"Current version: {current}")
-          print(f"Previous version: {prev}")
-          print(f"Changed: {changed}")
+          # Stash values for later steps
+          with open(os.environ["GITHUB_OUTPUT"],"a") as out:
+              out.write(f"current={current}\n")
+              out.write(f"previous={prev or ''}\n")
+              out.write(f"changed={'true' if changed else 'false'}\n")
+          print(f"Current version: {current}\nPrevious version: {prev}\nChanged: {changed}")
           PY
 
-      - name: Show decision
-        run: |
-          echo "current=${{ steps.ver.outputs.current }}"
-          echo "previous=${{ steps.ver.outputs.previous }}"
-          echo "changed=${{ steps.ver.outputs.changed }}"
-
+      # ---------- Build & Publish to PyPI (only if version changed) ----------
       - name: Build sdist + wheel
         if: steps.ver.outputs.changed == 'true'
         run: |
@@ -86,3 +78,122 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           skip-existing: true
+          
+      # ---------- Prepare CHANGELOG update & release notes ----------
+      - name: Prepare CHANGELOG update & release notes
+        id: cl
+        if: steps.ver.outputs.changed == 'true'
+        env:
+          VERSION: ${{ steps.ver.outputs.current }}
+          PREV_VERSION: ${{ steps.ver.outputs.previous }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python - << 'PY'
+          import os, re, sys, datetime, pathlib
+
+          repo = os.environ["REPO"]                 # e.g., org/repo
+          version = os.environ["VERSION"]           # e.g., 0.1.2
+          prev = os.environ.get("PREV_VERSION") or ""  # e.g., 0.1.1 or ""
+
+          changelog_path = pathlib.Path("CHANGELOG.md")
+          if not changelog_path.exists():
+              # Some repos use Changelog.md
+              alt = pathlib.Path("Changelog.md")
+              if alt.exists():
+                  changelog_path = alt
+              else:
+                  print("No CHANGELOG.md found", file=sys.stderr)
+                  sys.exit(1)
+
+          text = changelog_path.read_text(encoding="utf-8")
+
+          # Grab the [Unreleased] block (non-greedy until the next version header or EOF)
+          unreleased_re = re.compile(r"^## \\[Unreleased\\]\\s*(.*?)\\s*(?=^## \\[|\\Z)", re.S | re.M)
+          m = unreleased_re.search(text)
+          unreleased_body = (m.group(1).strip() if m else "").strip()
+          if not unreleased_body:
+              unreleased_body = "_No notable changes._"
+
+          # Build the new version section
+          today = datetime.date.today().isoformat()  # YYYY-MM-DD
+          new_section = f"## [{version}] - {today}\\n{unreleased_body}\\n\\n"
+
+          # Replace the Unreleased section with an empty placeholder
+          if m:
+              start, end = m.span()
+              prefix = text[:m.start()]
+              suffix = text[m.end():]
+              # Minimal placeholder keeps it tidy
+              unreleased_placeholder = "## [Unreleased]\\n\\n"
+              text = prefix + unreleased_placeholder + suffix
+          else:
+              # If there was no [Unreleased], put one at the top under the main title
+              text = text.replace("## Changelog", "## Changelog\\n\\n## [Unreleased]\\n")
+
+          # Insert the new version section right after [Unreleased]
+          insert_point = text.find("## [Unreleased]")
+          if insert_point != -1:
+              # Find end of that line to insert after
+              insert_point = text.find("\n", insert_point)
+              if insert_point == -1:
+                  insert_point = len(text)
+              text = text[:insert_point+1] + new_section + text[insert_point+1:]
+          else:
+              # Fallback: prepend
+              text = new_section + text
+
+          # ----- Update link reference section at the bottom -----
+          # Ensure we have lines for [Unreleased] and the new version comparing prev..current
+          # Remove any existing [Unreleased]: line to replace cleanly
+          lines = text.rstrip() .splitlines()
+          # Find if there's an existing reference block (last contiguous lines that look like "[x]: url")
+          # We'll just rebuild/append ours safely.
+          def set_ref(name, url):
+              ref = f"[{name}]: {url}"
+              # replace existing or append
+              for i, ln in enumerate(lines):
+                  if ln.startswith(f"[{name}]"):
+                      lines[i] = ref
+                      return
+              lines.append(ref)
+
+          base = f"https://github.com/{repo}"
+          # previous version for compare link; if unknown, compare from first commit
+          prev_tag = f"v{prev}" if prev else "v0.0.0"
+          set_ref("Unreleased", f"{base}/compare/v{version}...HEAD")
+          set_ref(version, f"{base}/compare/{prev_tag}...v{version}")
+
+          new_text = "\n".join(lines) + "\n"
+
+          # Write a temp file for release notes (just the body we moved)
+          pathlib.Path("RELEASE_NOTES.md").write_text(unreleased_body + "\n", encoding="utf-8")
+          # And write the updated changelog to a temp file (we only commit after publish)
+          pathlib.Path("CHANGELOG.updated.md").write_text(new_text, encoding="utf-8")
+          PY
+
+      # ---------- Commit CHANGELOG, tag, and create GitHub Release ----------
+      - name: Commit updated CHANGELOG
+        if: steps.ver.outputs.changed == 'true'
+        run: |
+          mv CHANGELOG.updated.md CHANGELOG.md
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): v${{ steps.ver.outputs.current }} [skip ci]"
+          git push
+
+      - name: Create and push tag
+        if: steps.ver.outputs.changed == 'true'
+        run: |
+          git tag -a "v${{ steps.ver.outputs.current }}" -m "v${{ steps.ver.outputs.current }}"
+          git push origin "v${{ steps.ver.outputs.current }}"
+
+      - name: Create GitHub Release with notes from CHANGELOG
+        if: steps.ver.outputs.changed == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.ver.outputs.current }}" \
+            --title "v${{ steps.ver.outputs.current }}" \
+            --notes-file RELEASE_NOTES.md
