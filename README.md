@@ -5,6 +5,8 @@ The Isaacus SageMaker Python integration enables users to interact with private 
 
 This integration only requires a single line of code to be added to existing Isaacus API-based applications.
 
+If you're looking for our AWS Marketplace listings, you can find them [here](https://aws.amazon.com/marketplace/seller-profile?id=seller-5e4iuidabgujc). Additionally, we offer a [complete guide](https://docs.isaacus.com/integrations/amazon-sagemaker) on how to deploy and use Isaacus models on SageMaker on our docs.
+
 ## Installation 📦
 This integration can be installed with `pip`:
 ```sh
