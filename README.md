@@ -92,7 +92,7 @@ class IsaacusSageMakerRuntimeHTTPClient(httpx.Client):
     This client extends `httpx.Client`.
 
     Arguments:
-        `endpoints` (`Sequence[IsaacusSageMakerRuntimeEndpoint]`): A sequence of SageMaker endpoints to route requests to.
+        `endpoints` (`Sequence[IsaacusSageMakerRuntimeEndpoint] | IsaacusSageMakerRuntimeEndpoint`): A sequence of SageMaker endpoints to route requests to or a single endpoint.
         `region` (`str`, optional): The AWS region where the SageMaker endpoints are deployed. Overriden by any region specified at the endpoint-level. Defaults to `None`, in which case the AWS SDK's default region resolution is used.
         `profile` (`str`, optional): The AWS profile to use when accessing the SageMaker endpoints. Overriden by any profile specified at the endpoint-level. Defaults to `None`, in which case the AWS SDK's default profile resolution is used.
         `boto_session_kwargs` (`Dict[str, Any]`, optional): Additional keyword arguments to pass to the `boto3.Session` constructor when creating the AWS session. Defaults to `None`.
@@ -109,7 +109,7 @@ class AsyncIsaacusSageMakerRuntimeHTTPClient(httpx.AsyncClient):
     This client extends `httpx.AsyncClient`.
 
     Arguments:
-        `endpoints` (`Sequence[IsaacusSageMakerRuntimeEndpoint]`): A sequence of SageMaker endpoints to route requests to.
+        `endpoints` (`Sequence[IsaacusSageMakerRuntimeEndpoint] | IsaacusSageMakerRuntimeEndpoint`): A sequence of SageMaker endpoints to route requests to or a single endpoint.
         `region` (`str`, optional): The AWS region where the SageMaker endpoints are deployed. Overriden by any region specified at the endpoint-level. Defaults to `None`, in which case the AWS SDK's default region resolution is used.
         `profile` (`str`, optional): The AWS profile to use when accessing the SageMaker endpoints. Overriden by any profile specified at the endpoint-level. Defaults to `None`, in which case the AWS SDK's default profile resolution is used.
         `boto_session_kwargs` (`Dict[str, Any]`, optional): Additional keyword arguments to pass to the `boto3.Session` constructor when creating the AWS session. Defaults to `None`.
